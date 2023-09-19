@@ -1,6 +1,8 @@
 using Supabase;
 using WebApplication1.Contracts;
 using WebApplication1.Models;
+using Newtonsoft.Json;
+using Postgrest;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,27 +33,26 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapPost("/cadastro", async (
-    CreateUsuarioRequest request,
-    Supabase.Client client) =>
-    {
-        var usuario = new UsuarioModel
-        {
-            Nome = request.Nome,
-            Descricao = request.Descricao,
-            Senha = request.Senha,
-            Email = request.Email,
-            FotoPerfil = request.FotoPerfil
-        };
+// TODO: alterar esta rota para usar coisa do auth
+// app.MapPost("/cadastro", async (
+//     CreateUsuarioRequest request,
+//     Supabase.Client client) =>
+//     {
+//         var usuario = new UsuarioModel
+//         {
+//             Nome = request.Nome,
+//             Senha = request.Senha,
+//             Email = request.Email
+//         };
+//
+//         var response = await client.From<UsuarioModel>().Insert(usuario);
+//
+//         var novoUsuario = response.Models.First();
+//
+//         return Results.Ok(novoUsuario.IdUsuario);
+//     });
 
-        var response = await client.From<UsuarioModel>().Insert(usuario);
-
-        var novoUsuario = response.Models.First();
-
-        return Results.Ok(novoUsuario.IdUsuario);
-    });
-
-app.MapGet("/usuarios/{id}", async (long IdUsuario, Supabase.Client client) =>
+app.MapGet("/usuarios/{id}", async (Guid IdUsuario, Supabase.Client client) =>
     {
         var response = await client
             .From<UsuarioModel>()
@@ -78,6 +79,52 @@ app.MapGet("/usuarios/{id}", async (long IdUsuario, Supabase.Client client) =>
 
         return Results.Ok(usuarioResponse);
     });
+
+app.MapPost("/criarlista", async (
+    CreateListaRequest request,
+    Supabase.Client client) =>
+    {
+        var lista = new ListaModel
+        {
+            Titulo = request.Titulo,
+            Conteudo = request.Conteudo,
+            IdUsuario = request.IdUsuario,
+            Tags = request.Tags
+            // Nome = request.Nome,
+            // Senha = request.Senha,
+            // Email = request.Email
+        };
+
+        var response = await client.From<ListaModel>().Insert(lista);
+
+        var novaLista = response.Models.First();
+
+        return Results.Ok(novaLista.IdLista);
+    });
+
+app.MapGet("/", async (Supabase.Client client) =>
+{
+    var response = await client
+        .From<ListaModel>()
+        .Range(9)
+        .Order("DataCriacao",Constants.Ordering.Descending)
+        .Get();
+
+    var listas = response.Models;
+
+    if (!listas.Any())
+    {
+        return Results.NotFound();
+    }
+    // var listasResponse = new GetListasResponse();
+    //
+    // foreach (ListaModel lista in listas)
+    // {
+    //     listasResponse.Listas.Add(lista);
+    // }
+
+    return Results.Ok(response);
+});
 
 app.UseHttpsRedirection();
 

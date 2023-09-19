@@ -1,5 +1,6 @@
 ﻿using Postgrest.Attributes;
 using Postgrest.Models;
+using System;
 
 namespace WebApplication1.Models;
 
@@ -7,11 +8,11 @@ namespace WebApplication1.Models;
 public class UsuarioSeguidorModel : BaseModel
 {
     [PrimaryKey("ID_USUARIO_SEGUIDOR", false)]
-    public long IdUsuarioSeguidor { get; set; }
+    public Guid IdUsuarioSeguidor { get; set; }
     
     [Column("ID_USUARIO")]
-    public long IdUsuario { get; set; }
+    public Guid IdUsuario { get; set; }
     
     [Column("ID_SEGUIDOR")]
-    public long IdSeguidor { get; set; }
+    public Guid IdSeguidor { get; set; }
 }
