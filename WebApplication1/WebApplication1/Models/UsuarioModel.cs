@@ -11,15 +11,8 @@ public class UsuarioModel : BaseModel
     
     [Column("NOME")]
     public string Nome { get; set; }
-    
-    // [Column("SENHA")]
-    // public string Senha { get; set; }
-    //
     [Column("DESCRICAO")]
     public string? Descricao { get; set; }
-    
-    // [Column("EMAIL")]
-    // public string Email { get; set; }
     
     [Column("FOTO_PERFIL")]
     public string? FotoPerfil { get; set; }

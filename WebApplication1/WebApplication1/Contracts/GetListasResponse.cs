@@ -19,5 +19,7 @@ public class Lista
     
     public DateTime DataCriacao { get; set; }
     
-    public long IdUsuario { get; set; }
+    public Guid IdUsuario { get; set; }
+    
+    public string? Tags { get; set; }
 }
