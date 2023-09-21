@@ -34,25 +34,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// TODO: alterar esta rota para usar coisa do auth
-// app.MapPost("/cadastro", async (
-//     CreateUsuarioRequest request,
-//     Supabase.Client client) =>
-//     {
-//         var usuario = new UsuarioModel
-//         {
-//             Nome = request.Nome,
-//             Senha = request.Senha,
-//             Email = request.Email
-//         };
-//
-//         var response = await client.From<UsuarioModel>().Insert(usuario);
-//
-//         var novoUsuario = response.Models.First();
-//
-//         return Results.Ok(novoUsuario.IdUsuario);
-//     });
-
 app.MapGet("/usuarios/{id}", async (Guid IdUsuario, Supabase.Client client) =>
     {
         var response = await client
@@ -83,61 +64,28 @@ app.MapPost("/lista", async (
     CreateListaRequest request,
     Supabase.Client client) =>
 {
-    //var conteudoJson = JsonConvert.SerializeObject(request.Conteudo);
-    
-    //var tagsJson = JsonConvert.DeserializeObject(request.Tags!);
-    //Console.Write(tagsJson!.ToString());
     List<string>? tags = request.Tags;
-    //List<Conteudo> conteudo = request.Conteudo;
     var conteudo = new List<Conteudo>();
 
     if (request.Conteudo != null)
     {
         conteudo = request.Conteudo;
-        // foreach (var item in request.Conteudo)
-        // {
-        //     //Console.WriteLine($"{item.NomeItem}: {item.DescricaoItem}");
-        //     var conteudoTemp = new Conteudo();
-        //     conteudoTemp.NomeItem = item.NomeItem;
-        //     conteudoTemp.DescricaoItem = item.DescricaoItem;
-        //     conteudo.Add(conteudoTemp);
-        // }
     }
-        
-        
-        
-    //Console.Write(request.Tags);
     
     var lista = new ListaModel
     {
         Titulo = request.Titulo,
-        //Conteudo = conteudoJson,
         IdUsuario = request.IdUsuario,
-        //Tags = tags
     };
 
     if (conteudo.Any())
     {
         lista.Conteudo = JsonConvert.SerializeObject(conteudo);
-
-        // JObject fromObject = JObject.FromObject(lista.Conteudo);
-        //
-        // foreach (var pair in fromObject)
-        // {
-        //     Console.WriteLine($"{pair.Key}: {pair.Value}");
-        // }
     }
 
     if (tags != null && tags.Any())
     {
-        //lista.Tags = new List<string>();
-
         lista.Tags = JsonConvert.SerializeObject(tags);
-
-        // foreach (var elemento in tags)
-        // {
-        //     lista.Tags.Add(elemento);
-        // }
     }
     
     var response = await client.From<ListaModel>().Insert(lista);
@@ -153,7 +101,7 @@ app.MapGet("/lista/{id}", async (Guid idLista, Supabase.Client client) =>
         .From<ListaModel>()
         .Where(n => n.IdLista == idLista)
         .Get();
-
+    
     var lista = response.Models.FirstOrDefault();
 
     if (lista is null)
@@ -161,16 +109,43 @@ app.MapGet("/lista/{id}", async (Guid idLista, Supabase.Client client) =>
         return Results.NotFound();
     }
     
-    //object jsonConteudo = JsonConvert.DeserializeObject(lista.Conteudo)
+    // TODO: Melhorar esse tanto de condicao horroroso
+    
+    var conteudoString = lista.Conteudo.ToString();
+
+    List<Conteudo>? conteudo;
+    
+    if (conteudoString == null)
+    {
+        conteudo = null;
+    }
+    else
+    {
+        conteudo = JsonConvert.DeserializeObject<List<Conteudo>>(conteudoString);
+    }
+
+    var tagsString = lista.Tags.ToString();
+
+    List<string>? tags;
+    
+    if (tagsString == null)
+    {
+        tags = null;
+    }
+    else
+    {
+        tags = JsonConvert.DeserializeObject<List<string>>(tagsString);
+    }
 
     var listaResponse = new Lista
     {
         IdLista = lista.IdLista,
         IdUsuario = lista.IdUsuario,
         Titulo = lista.Titulo,
-        //Conteudo = lista.Conteudo,
+        Conteudo = conteudo,
         NumLikes = lista.NumLikes,
-        DataCriacao = lista.DataCriacao
+        DataCriacao = lista.DataCriacao,
+        Tags = tags
     };
 
     return Results.Ok(listaResponse);
@@ -209,6 +184,7 @@ app.MapGet("/", async (Supabase.Client client) =>
 {
     var response = await client
         .From<ListaModel>()
+        .Limit(10)
         .Get();
 
     var listas = response.Models;
@@ -217,14 +193,43 @@ app.MapGet("/", async (Supabase.Client client) =>
 
     foreach (var lista in listas)
     {
-        var lst = new Lista();
-        lst.IdLista = lista.IdLista;
-        lst.IdUsuario = lista.IdUsuario;
-        lst.DataCriacao = lista.DataCriacao;
-        //lst.Conteudo = lista.Conteudo;
-        lst.Titulo = lista.Titulo;
-        lst.NumLikes = lista.NumLikes;
+        var conteudoString = lista.Conteudo.ToString();
+
+        List<Conteudo>? conteudo;
+    
+        if (conteudoString == null)
+        {
+            conteudo = null;
+        }
+        else
+        {
+            conteudo = JsonConvert.DeserializeObject<List<Conteudo>>(conteudoString);
+        }
         
+        var tagsString = lista.Tags.ToString();
+
+        List<string>? tags;
+    
+        if (tagsString == null)
+        {
+            tags = null;
+        }
+        else
+        {
+            tags = JsonConvert.DeserializeObject<List<string>>(tagsString);
+        }
+        
+        var lst = new Lista
+        {
+            IdLista = lista.IdLista,
+            IdUsuario = lista.IdUsuario,
+            DataCriacao = lista.DataCriacao,
+            Conteudo = conteudo,
+            Titulo = lista.Titulo,
+            NumLikes = lista.NumLikes,
+            Tags = tags
+        };
+
         listaResponse.Add(lst);
     }
     

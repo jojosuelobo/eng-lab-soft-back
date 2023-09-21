@@ -13,7 +13,7 @@ public class Lista
     
     public string Titulo { get; set; }
     
-    public string? Conteudo { get; set; }
+    public List<Conteudo>? Conteudo { get; set; }
     
     public long NumLikes { get; set; }
     
@@ -21,5 +21,5 @@ public class Lista
     
     public Guid IdUsuario { get; set; }
     
-    public string? Tags { get; set; }
+    public List<string>? Tags { get; set; }
 }
