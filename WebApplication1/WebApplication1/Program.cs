@@ -1,6 +1,9 @@
 using Supabase;
 using WebApplication1.Contracts;
 using WebApplication1.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Postgrest;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,27 +34,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapPost("/cadastro", async (
-    CreateUsuarioRequest request,
-    Supabase.Client client) =>
-    {
-        var usuario = new UsuarioModel
-        {
-            Nome = request.Nome,
-            Descricao = request.Descricao,
-            Senha = request.Senha,
-            Email = request.Email,
-            FotoPerfil = request.FotoPerfil
-        };
-
-        var response = await client.From<UsuarioModel>().Insert(usuario);
-
-        var novoUsuario = response.Models.First();
-
-        return Results.Ok(novoUsuario.IdUsuario);
-    });
-
-app.MapGet("/usuarios/{id}", async (long IdUsuario, Supabase.Client client) =>
+app.MapGet("/usuarios/{id}", async (Guid IdUsuario, Supabase.Client client) =>
     {
         var response = await client
             .From<UsuarioModel>()
@@ -69,15 +52,194 @@ app.MapGet("/usuarios/{id}", async (long IdUsuario, Supabase.Client client) =>
         {
             IdUsuario = usuario.IdUsuario,
             Nome = usuario.Nome,
-            //Senha = usuario.Senha
             Descricao = usuario.Descricao,
-            //Email = usuario.Email
             FotoPerfil = usuario.FotoPerfil,
             DataCriacao = usuario.DataCriacao
         };
 
         return Results.Ok(usuarioResponse);
     });
+
+app.MapPost("/lista", async (
+    CreateListaRequest request,
+    Supabase.Client client) =>
+{
+    List<string>? tags = request.Tags;
+    var conteudo = new List<Conteudo>();
+
+    if (request.Conteudo != null)
+    {
+        conteudo = request.Conteudo;
+    }
+    
+    var lista = new ListaModel
+    {
+        Titulo = request.Titulo,
+        IdUsuario = request.IdUsuario,
+    };
+
+    if (conteudo.Any())
+    {
+        lista.Conteudo = JsonConvert.SerializeObject(conteudo);
+    }
+
+    if (tags != null && tags.Any())
+    {
+        lista.Tags = JsonConvert.SerializeObject(tags);
+    }
+    
+    var response = await client.From<ListaModel>().Insert(lista);
+
+    var novaLista = response.Models.First();
+
+    return Results.Ok(novaLista.IdLista);
+});
+
+app.MapGet("/lista/{id}", async (Guid idLista, Supabase.Client client) =>
+{
+    var response = await client
+        .From<ListaModel>()
+        .Where(n => n.IdLista == idLista)
+        .Get();
+    
+    var lista = response.Models.FirstOrDefault();
+
+    if (lista is null)
+    {
+        return Results.NotFound();
+    }
+    
+    // TODO: Melhorar esse tanto de condicao horroroso
+    
+    var conteudoString = lista.Conteudo.ToString();
+
+    List<Conteudo>? conteudo;
+    
+    if (conteudoString == null)
+    {
+        conteudo = null;
+    }
+    else
+    {
+        conteudo = JsonConvert.DeserializeObject<List<Conteudo>>(conteudoString);
+    }
+
+    var tagsString = lista.Tags.ToString();
+
+    List<string>? tags;
+    
+    if (tagsString == null)
+    {
+        tags = null;
+    }
+    else
+    {
+        tags = JsonConvert.DeserializeObject<List<string>>(tagsString);
+    }
+
+    var listaResponse = new Lista
+    {
+        IdLista = lista.IdLista,
+        IdUsuario = lista.IdUsuario,
+        Titulo = lista.Titulo,
+        Conteudo = conteudo,
+        NumLikes = lista.NumLikes,
+        DataCriacao = lista.DataCriacao,
+        Tags = tags
+    };
+
+    return Results.Ok(listaResponse);
+});
+
+app.MapGet("/usersTeste", async (Supabase.Client client) =>
+{
+    var response = await client
+        .From<UsuarioModel>()
+        .Get();
+
+    var listas = response.Models;
+
+    var usuarioResponse = new List<UsuarioResponse>();
+
+    foreach (var usuario in listas)
+    {
+        var usr = new UsuarioResponse();
+        usr.IdUsuario = usuario.IdUsuario;
+        usr.Nome = usuario.Nome;
+        usr.Descricao = usuario.Descricao;
+        usr.FotoPerfil = usuario.FotoPerfil;
+        usr.DataCriacao = usuario.DataCriacao;
+        usuarioResponse.Add(usr);
+    }
+    
+    if (!listas.Any())
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(usuarioResponse);
+});
+
+app.MapGet("/", async (Supabase.Client client) =>
+{
+    var response = await client
+        .From<ListaModel>()
+        .Limit(10)
+        .Get();
+
+    var listas = response.Models;
+
+    var listaResponse = new List<Lista>();
+
+    foreach (var lista in listas)
+    {
+        var conteudoString = lista.Conteudo.ToString();
+
+        List<Conteudo>? conteudo;
+    
+        if (conteudoString == null)
+        {
+            conteudo = null;
+        }
+        else
+        {
+            conteudo = JsonConvert.DeserializeObject<List<Conteudo>>(conteudoString);
+        }
+        
+        var tagsString = lista.Tags.ToString();
+
+        List<string>? tags;
+    
+        if (tagsString == null)
+        {
+            tags = null;
+        }
+        else
+        {
+            tags = JsonConvert.DeserializeObject<List<string>>(tagsString);
+        }
+        
+        var lst = new Lista
+        {
+            IdLista = lista.IdLista,
+            IdUsuario = lista.IdUsuario,
+            DataCriacao = lista.DataCriacao,
+            Conteudo = conteudo,
+            Titulo = lista.Titulo,
+            NumLikes = lista.NumLikes,
+            Tags = tags
+        };
+
+        listaResponse.Add(lst);
+    }
+    
+    if (!listas.Any())
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(listaResponse);
+});
 
 app.UseHttpsRedirection();
 

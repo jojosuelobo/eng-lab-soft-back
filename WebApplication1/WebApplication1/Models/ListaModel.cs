@@ -1,4 +1,5 @@
-﻿using Postgrest.Attributes;
+﻿using Newtonsoft.Json;
+using Postgrest.Attributes;
 using Postgrest.Models;
 
 namespace WebApplication1.Models;
@@ -7,13 +8,13 @@ namespace WebApplication1.Models;
 public class ListaModel : BaseModel
 {
     [PrimaryKey("ID_LISTA", false)]
-    public long IdLista { get; set; }
+    public Guid IdLista { get; set; }
     
     [Column("TITULO")]
     public string Titulo { get; set; }
     
     [Column("CONTEUDO")]
-    public string? Conteudo { get; set; }
+    public object Conteudo { get; set; }
     
     [Column("NUM_LIKES")]
     public long NumLikes { get; set; }
@@ -22,5 +23,15 @@ public class ListaModel : BaseModel
     public DateTime DataCriacao { get; set; }
     
     [Column("ID_USUARIO")]
-    public long IdUsuario { get; set; }
+    public Guid IdUsuario { get; set; }
+    
+    [Column("TAGS")]
+    public object Tags { get; set; }
+}
+
+[Serializable]
+public class Conteudo
+{
+    public string NomeItem { get; set; }
+    public string DescricaoItem { get; set; }
 }
