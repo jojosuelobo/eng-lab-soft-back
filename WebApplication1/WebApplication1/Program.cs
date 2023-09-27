@@ -25,11 +25,24 @@ builder.Services.AddScoped<Supabase.Client>(_ =>
             AutoConnectRealtime = true
         }));
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", buildr =>
+    {
+        buildr.WithOrigins(("http://localhost:5173"))
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
+
+app.UseCors("AllowReactApp");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseHttpLogging();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
@@ -60,7 +73,7 @@ app.MapGet("/usuarios/{id}", async (Guid IdUsuario, Supabase.Client client) =>
         return Results.Ok(usuarioResponse);
     });
 
-app.MapPost("/lista", async (
+app.MapPost("/newpost", async (
     CreateListaRequest request,
     Supabase.Client client) =>
 {
@@ -95,7 +108,7 @@ app.MapPost("/lista", async (
     return Results.Ok(novaLista.IdLista);
 });
 
-app.MapGet("/lista/{id}", async (Guid idLista, Supabase.Client client) =>
+app.MapGet("/posts/{id}", async (Guid idLista, Supabase.Client client) =>
 {
     var response = await client
         .From<ListaModel>()
@@ -145,7 +158,8 @@ app.MapGet("/lista/{id}", async (Guid idLista, Supabase.Client client) =>
         Conteudo = conteudo,
         NumLikes = lista.NumLikes,
         DataCriacao = lista.DataCriacao,
-        Tags = tags
+        Tags = tags,
+        Descricao = lista.Descricao
     };
 
     return Results.Ok(listaResponse);
@@ -180,7 +194,7 @@ app.MapGet("/usersTeste", async (Supabase.Client client) =>
     return Results.Ok(usuarioResponse);
 });
 
-app.MapGet("/", async (Supabase.Client client) =>
+app.MapGet("/posts", async (Supabase.Client client) =>
 {
     var response = await client
         .From<ListaModel>()
@@ -227,7 +241,8 @@ app.MapGet("/", async (Supabase.Client client) =>
             Conteudo = conteudo,
             Titulo = lista.Titulo,
             NumLikes = lista.NumLikes,
-            Tags = tags
+            Tags = tags,
+            Descricao = lista.Descricao
         };
 
         listaResponse.Add(lst);

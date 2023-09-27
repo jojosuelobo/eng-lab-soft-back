@@ -27,6 +27,9 @@ public class ListaModel : BaseModel
     
     [Column("TAGS")]
     public object Tags { get; set; }
+    
+    [Column("DESCRICAO")]
+    public string Descricao { get; set; }
 }
 
 [Serializable]

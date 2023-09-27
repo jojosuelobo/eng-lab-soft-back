@@ -10,6 +10,8 @@ public class CreateListaRequest
     
     public Guid IdUsuario { get; set; }
     public List<string>? Tags { get; set; }
+
+    public string Descricao { get; set; } = "";
 }
 
 public class CreateListaResponse
