@@ -42,36 +42,35 @@ app.UseCors("AllowReactApp");
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseHttpLogging();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.MapGet("/usuarios/{id}", async (Guid IdUsuario, Supabase.Client client) =>
+app.MapGet("/usuarios/id", async (Guid IdUsuario, Supabase.Client client) =>
+{
+    var response = await client
+        .From<UsuarioModel>()
+        .Where(n => n.IdUsuario == IdUsuario)
+        .Get();
+
+    var usuario = response.Models.FirstOrDefault();
+
+    if (usuario is null)
     {
-        var response = await client
-            .From<UsuarioModel>()
-            .Where(n => n.IdUsuario == IdUsuario)
-            .Get();
+        return Results.NotFound();
+    }
 
-        var usuario = response.Models.FirstOrDefault();
+    var usuarioResponse = new UsuarioResponse
+    {
+        IdUsuario = usuario.IdUsuario,
+        Nome = usuario.Nome,
+        Descricao = usuario.Descricao,
+        FotoPerfil = usuario.FotoPerfil,
+        DataCriacao = usuario.DataCriacao
+    };
 
-        if (usuario is null)
-        {
-            return Results.NotFound();
-        }
-
-        var usuarioResponse = new UsuarioResponse
-        {
-            IdUsuario = usuario.IdUsuario,
-            Nome = usuario.Nome,
-            Descricao = usuario.Descricao,
-            FotoPerfil = usuario.FotoPerfil,
-            DataCriacao = usuario.DataCriacao
-        };
-
-        return Results.Ok(usuarioResponse);
-    });
+    return Results.Ok(usuarioResponse);
+});
 
 app.MapPost("/newpost", async (
     CreateListaRequest request,
@@ -108,7 +107,7 @@ app.MapPost("/newpost", async (
     return Results.Ok(novaLista.IdLista);
 });
 
-app.MapGet("/posts/{id}", async (Guid idLista, Supabase.Client client) =>
+app.MapGet("/posts/id", async (Guid idLista, Supabase.Client client) =>
 {
     var response = await client
         .From<ListaModel>()
