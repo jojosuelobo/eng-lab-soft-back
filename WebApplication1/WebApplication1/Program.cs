@@ -72,6 +72,134 @@ app.MapGet("/usuarios/id", async (Guid IdUsuario, Supabase.Client client) =>
     return Results.Ok(usuarioResponse);
 });
 
+// TODO: fazer funcionar com Update e Put
+app.MapPost("/edit/id", async (Guid idLista, CreateListaRequest request, Supabase.Client client) =>
+{
+    // Newpost
+    List<string>? tags = request.Tags;
+    var conteudo = new List<Conteudo>();
+
+    if (request.Conteudo != null)
+    {
+        conteudo = request.Conteudo;
+    }
+    
+    var lista = new ListaModel
+    {
+        Titulo = request.Titulo,
+        IdUsuario = request.IdUsuario,
+        Descricao = request.Descricao,
+    };
+
+    if (conteudo.Any())
+    {
+        lista.Conteudo = JsonConvert.SerializeObject(conteudo);
+    }
+
+    if (tags != null && tags.Any())
+    {
+        lista.Tags = JsonConvert.SerializeObject(tags);
+    }
+    
+    var get = await client
+        .From<ListaModel>()
+        .Where(n => n.IdLista == idLista)
+        .Get();
+    
+    var lista1 = get.Models.FirstOrDefault();
+
+    if (lista1 is null)
+    {
+        return Results.NotFound();
+    }
+    
+    // TODO: Melhorar esse tanto de condicao horroroso
+    
+    var conteudoString = lista1.Conteudo.ToString();
+
+    List<Conteudo>? conteudo1;
+    
+    if (conteudoString == null)
+    {
+        conteudo1 = null;
+    }
+    else
+    {
+        conteudo1 = JsonConvert.DeserializeObject<List<Conteudo>>(conteudoString);
+    }
+
+    var tagsString = lista.Tags.ToString();
+
+    List<string>? tags1;
+    
+    if (tagsString == null)
+    {
+        tags1 = null;
+    }
+    else
+    {
+        tags1 = JsonConvert.DeserializeObject<List<string>>(tagsString);
+    }
+
+    var listaResponse = new Lista
+    {
+        IdLista = lista1.IdLista,
+        IdUsuario = lista1.IdUsuario,
+        Titulo = lista1.Titulo,
+        Conteudo = conteudo1,
+        NumLikes = lista1.NumLikes,
+        DataCriacao = lista1.DataCriacao,
+        Tags = tags1,
+        Descricao = lista1.Descricao
+    };
+
+    await client.From<ListaModel>().Where(n => n.IdLista == idLista).Delete();
+
+    if (listaResponse.Titulo != request.Titulo && request.Titulo != "")
+    {
+        listaResponse.Titulo = request.Titulo;
+    }
+
+    if (listaResponse.Conteudo != request.Conteudo && request.Conteudo != null)
+    {
+        listaResponse.Conteudo = request.Conteudo;
+    }
+
+    if (listaResponse.Tags != request.Tags && request.Tags != null)
+    {
+        listaResponse.Tags = request.Tags;
+    }
+
+    if (listaResponse.Descricao != request.Descricao && request.Descricao != "")
+    {
+        listaResponse.Descricao = request.Descricao;
+    }
+    
+    //var response = await client.From<ListaModel>().Where(n => n.IdLista == idLista).Set(lista).Update();
+
+    var novoModel = new ListaModel
+    {
+        Titulo = listaResponse.Titulo,
+        IdUsuario = listaResponse.IdUsuario,
+        Descricao = listaResponse.Descricao,
+        Conteudo = listaResponse.Conteudo,
+        Tags = listaResponse.Tags
+    };
+    
+    var responseInsert = await client.From<ListaModel>().Insert(novoModel);
+
+    var novaLista = responseInsert.Models.First();
+    
+    return Results.Ok(novaLista.IdLista);
+});
+
+app.MapDelete("/delete/id", async (Guid idLista, Supabase.Client client) =>
+{
+    // TODO: adicionar validacao talvez
+    await client.From<ListaModel>().Where(n => n.IdLista == idLista).Delete();
+    return Results.Ok();
+});
+
 app.MapPost("/newpost", async (
     CreateListaRequest request,
     Supabase.Client client) =>
@@ -88,6 +216,7 @@ app.MapPost("/newpost", async (
     {
         Titulo = request.Titulo,
         IdUsuario = request.IdUsuario,
+        Descricao = request.Descricao,
     };
 
     if (conteudo.Any())
