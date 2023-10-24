@@ -73,7 +73,7 @@ app.MapGet("/usuarios/id", async (Guid IdUsuario, Supabase.Client client) =>
 });
 
 // TODO: fazer funcionar com Update e Put
-app.MapPost("/edit/id", async (Guid idLista, CreateListaRequest request, Supabase.Client client) =>
+app.MapPut("/edit/id", async (Guid idLista, CreateListaRequest request, Supabase.Client client) =>
 {
     // Newpost
     List<string>? tags = request.Tags;
@@ -153,8 +153,6 @@ app.MapPost("/edit/id", async (Guid idLista, CreateListaRequest request, Supabas
         Descricao = lista1.Descricao
     };
 
-    await client.From<ListaModel>().Where(n => n.IdLista == idLista).Delete();
-
     if (listaResponse.Titulo != request.Titulo && request.Titulo != "")
     {
         listaResponse.Titulo = request.Titulo;
@@ -174,23 +172,33 @@ app.MapPost("/edit/id", async (Guid idLista, CreateListaRequest request, Supabas
     {
         listaResponse.Descricao = request.Descricao;
     }
-    
-    //var response = await client.From<ListaModel>().Where(n => n.IdLista == idLista).Set(lista).Update();
 
     var novoModel = new ListaModel
     {
+        IdLista = listaResponse.IdLista,
         Titulo = listaResponse.Titulo,
         IdUsuario = listaResponse.IdUsuario,
         Descricao = listaResponse.Descricao,
         Conteudo = listaResponse.Conteudo,
-        Tags = listaResponse.Tags
+        Tags = listaResponse.Tags,
+        DataCriacao = listaResponse.DataCriacao,
+        NumLikes = listaResponse.NumLikes
+        
     };
-    
-    var responseInsert = await client.From<ListaModel>().Insert(novoModel);
 
-    var novaLista = responseInsert.Models.First();
-    
-    return Results.Ok(novaLista.IdLista);
+    var responseInsert = await client.From<ListaModel>().Where(n => n.IdLista == idLista)
+        .Set(model => model.Titulo ,novoModel.Titulo)
+        .Set(model => model.Descricao, novoModel.Descricao)
+        .Set(model => model.Conteudo, novoModel.Conteudo)
+        .Set(model => model.Tags, novoModel.Tags)
+        .Update();
+
+    if (!responseInsert.Models.Any())
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok();
 });
 
 app.MapDelete("/delete/id", async (Guid idLista, Supabase.Client client) =>
@@ -326,7 +334,6 @@ app.MapGet("/posts", async (Supabase.Client client) =>
 {
     var response = await client
         .From<ListaModel>()
-        .Limit(10)
         .Get();
 
     var listas = response.Models;
