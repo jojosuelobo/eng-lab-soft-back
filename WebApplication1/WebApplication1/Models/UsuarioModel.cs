@@ -20,5 +20,8 @@ public class UsuarioModel : BaseModel
     [Column("DATA_CRIACAO")]
     public DateTime DataCriacao { get; set; }
     
+    [Column("PRONOMES")]
+    public string? Pronomes { get; set; }
+    
     // TODO: adicionar seguidores aqui
 }

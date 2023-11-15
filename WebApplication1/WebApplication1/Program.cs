@@ -67,10 +67,40 @@ app.MapGet("/usuarios/id", async (Guid IdUsuario, Supabase.Client client) =>
         Nome = usuario.Nome,
         Descricao = usuario.Descricao,
         FotoPerfil = usuario.FotoPerfil,
-        DataCriacao = usuario.DataCriacao
+        DataCriacao = usuario.DataCriacao,
+        Pronomes = usuario.Pronomes
     };
 
     return Results.Ok(usuarioResponse);
+});
+
+app.MapPut("/usuarios/edit", async (Guid IdUsuario, CreateUsuarioRequest request, Supabase.Client client) =>
+{
+    // New client
+    var usuarioAlterado = new UsuarioModel
+    {
+        Nome = request.Nome,
+        Descricao = request.Descricao,
+        FotoPerfil = request.FotoPerfil,
+        Pronomes = request.Pronomes
+    };
+
+    if (usuarioAlterado.Nome.Length <= 0)
+        return Results.Unauthorized();
+    
+    var responseInsert = await client.From<UsuarioModel>().Where(n => n.IdUsuario == IdUsuario)
+        .Set(model => model.Nome ,usuarioAlterado.Nome)
+        .Set(model => model.Descricao, usuarioAlterado.Descricao)
+        .Set(model => model.FotoPerfil, usuarioAlterado.FotoPerfil)
+        .Set(model => model.Pronomes, usuarioAlterado.Pronomes)
+        .Update();
+    
+    if (!responseInsert.Models.Any())
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(responseInsert.Models.FirstOrDefault());
 });
 
 app.MapPut("/edit/id", async (Guid idLista, CreateListaRequest request, Supabase.Client client) =>
@@ -297,6 +327,68 @@ app.MapGet("/posts/id", async (Guid idLista, Supabase.Client client) =>
         Tags = tags,
         Descricao = lista.Descricao
     };
+
+    return Results.Ok(listaResponse);
+});
+
+app.MapGet("/posts/usuario", async (Guid idUsuario, Supabase.Client client) =>
+{
+    var response = await client
+        .From<ListaModel>()
+        .Where(n=>n.IdUsuario == idUsuario)
+        .Get();
+
+    var listas = response.Models;
+
+    var listaResponse = new List<Lista>();
+
+    foreach (var lista in listas)
+    {
+        var conteudoString = lista.Conteudo.ToString();
+
+        List<Conteudo>? conteudo;
+    
+        if (conteudoString == null)
+        {
+            conteudo = null;
+        }
+        else
+        {
+            conteudo = JsonConvert.DeserializeObject<List<Conteudo>>(conteudoString);
+        }
+        
+        var tagsString = lista.Tags.ToString();
+
+        List<string>? tags;
+    
+        if (tagsString == null)
+        {
+            tags = null;
+        }
+        else
+        {
+            tags = JsonConvert.DeserializeObject<List<string>>(tagsString);
+        }
+        
+        var lst = new Lista
+        {
+            IdLista = lista.IdLista,
+            IdUsuario = lista.IdUsuario,
+            DataCriacao = lista.DataCriacao,
+            Conteudo = conteudo,
+            Titulo = lista.Titulo,
+            NumLikes = lista.NumLikes,
+            Tags = tags,
+            Descricao = lista.Descricao
+        };
+
+        listaResponse.Add(lst);
+    }
+    
+    if (!listas.Any())
+    {
+        return Results.NotFound();
+    }
 
     return Results.Ok(listaResponse);
 });
