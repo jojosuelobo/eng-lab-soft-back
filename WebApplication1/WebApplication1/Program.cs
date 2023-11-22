@@ -483,90 +483,90 @@ app.MapGet("/posts", async (Supabase.Client client) =>
     return Results.Ok(listaResponse);
 });
 
-// app.MapGet("/posts/busca", async (Supabase.Client client) =>
-// {
-//     //var queryValues = httpContext.Request.Query["tag"];
-//     
-//     //Console.WriteLine(queryValues.Count);
-//     //Console.WriteLine(queryValues);
-//
-//     //ModeledResponse<ListaModel>? response;
-//     
-//     // if (queryValues.Count == 0)
-//     // {
-//     //     response = await client
-//     //         .From<ListaModel>()
-//     //         .Get();
-//     // }
-//     // else
-//     // {
-//     //     var tags = queryValues.Select(tg => tg).ToList();
-//     //     
-//     //     response = await client
-//     //         .From<ListaModel>()
-//     //         .Where(n => tags.Contains(n.Tags))
-//     //         .Get();
-//     // }
-//
-//     // var response = await client
-//     // .From<ListaModel>()
-//     // .Where(n => tags.Contains(n.Tags))
-//     // .Get();
-//     //
-//     var listas = response.Models;
-//
-//     var listaResponse = new List<Lista>();
-//
-//     foreach (var lista in listas)
-//     {
-//         var conteudoString = lista.Conteudo.ToString();
-//
-//         List<Conteudo>? conteudo;
-//     
-//         if (conteudoString == null)
-//         {
-//             conteudo = null;
-//         }
-//         else
-//         {
-//             conteudo = JsonConvert.DeserializeObject<List<Conteudo>>(conteudoString);
-//         }
-//         
-//         var tagsString = lista.Tags.ToString();
-//
-//         List<string>? tags;
-//     
-//         if (tagsString == null)
-//         {
-//             tags = null;
-//         }
-//         else
-//         {
-//             tags = JsonConvert.DeserializeObject<List<string>>(tagsString);
-//         }
-//         
-//         var lst = new Lista
-//         {
-//             IdLista = lista.IdLista,
-//             IdUsuario = lista.IdUsuario,
-//             DataCriacao = lista.DataCriacao,
-//             Conteudo = conteudo,
-//             Titulo = lista.Titulo,
-//             NumLikes = lista.NumLikes,
-//             Tags = tags,
-//             Descricao = lista.Descricao
-//         };
-//
-//         listaResponse.Add(lst);
-//     }
-//     
-//     if (!listas.Any())
-//     {
-//         return Results.NotFound();
-//     }
-//
-//     return Results.Ok(listaResponse);
-// });
+// Coisa chata so consigo passar tags se não for get, então isso aqui é put a partir de agora
+app.MapPut("/posts/busca", async (SearchListaRequest request, Supabase.Client client) =>
+{
+    var tagsRequest = request.Tags;
+
+    var response = await client
+    .From<ListaModel>()
+    .Get();
+    
+    var listas = response.Models;
+
+    var listaResponse = new List<Lista>();
+
+    foreach (var lista in listas)
+    {
+        var conteudoString = lista.Conteudo.ToString();
+
+        List<Conteudo>? conteudo;
+    
+        if (conteudoString == null)
+        {
+            conteudo = null;
+        }
+        else
+        {
+            conteudo = JsonConvert.DeserializeObject<List<Conteudo>>(conteudoString);
+        }
+        
+        var tagsString = lista.Tags.ToString();
+
+        List<string>? tags;
+    
+        if (tagsString == null)
+        {
+            tags = null;
+        }
+        else
+        {
+            tags = JsonConvert.DeserializeObject<List<string>>(tagsString);
+        }
+        
+        var lst = new Lista
+        {
+            IdLista = lista.IdLista,
+            IdUsuario = lista.IdUsuario,
+            DataCriacao = lista.DataCriacao,
+            Conteudo = conteudo,
+            Titulo = lista.Titulo,
+            NumLikes = lista.NumLikes,
+            Tags = tags,
+            Descricao = lista.Descricao
+        };
+        
+        var found = false;
+
+        foreach (var tag in tagsRequest)
+        {
+            if (lst.Titulo.Contains(tag))
+            {
+                found = true;
+            }
+        }
+        foreach (var tg in lst.Tags)
+        {
+            foreach (var tgRequest in tagsRequest)
+            {
+                if (tgRequest == tg)
+                {
+                    found = true;
+                }
+            }
+        }
+
+        if(found) 
+            listaResponse.Add(lst);
+    }
+    
+    if (!listas.Any())
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(listaResponse);
+});
 
 //app.MapGet("/posts/teste", async (string tags, Supabase.Client client) => { return Results.Ok();});
 

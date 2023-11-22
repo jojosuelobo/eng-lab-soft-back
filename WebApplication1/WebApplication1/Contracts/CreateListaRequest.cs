@@ -14,6 +14,11 @@ public class CreateListaRequest
     public string Descricao { get; set; } = "";
 }
 
+public class SearchListaRequest
+{
+    public List<string>? Tags { get; set; }
+}
+
 public class CreateListaResponse
 {
     public string Titulo { get; set; }
