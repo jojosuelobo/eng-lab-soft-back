@@ -2,9 +2,9 @@ using Supabase;
 using WebApplication1.Contracts;
 using WebApplication1.Models;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Postgrest;
-using Postgrest.Responses;
+// using Newtonsoft.Json.Linq;
+// using Postgrest;
+// using Postgrest.Responses;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -91,7 +91,7 @@ app.MapPut("/usuarios/edit", async (Guid IdUsuario, CreateUsuarioRequest request
     var responseInsert = await client.From<UsuarioModel>().Where(n => n.IdUsuario == IdUsuario)
         .Set(model => model.Nome ,usuarioAlterado.Nome)
         .Set(model => model.Descricao, usuarioAlterado.Descricao)
-        .Set(model => model.FotoPerfil, usuarioAlterado.FotoPerfil)
+        //.Set(model => model.FotoPerfil, usuarioAlterado.FotoPerfil)
         .Set(model => model.Pronomes, usuarioAlterado.Pronomes)
         .Update();
     
@@ -100,7 +100,7 @@ app.MapPut("/usuarios/edit", async (Guid IdUsuario, CreateUsuarioRequest request
         return Results.NotFound();
     }
 
-    return Results.Ok(responseInsert.Models.FirstOrDefault());
+    return Results.Ok();
 });
 
 app.MapPut("/edit/id", async (Guid idLista, CreateListaRequest request, Supabase.Client client) =>
